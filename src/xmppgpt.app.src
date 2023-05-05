@@ -5,7 +5,8 @@
   {mod, {xmppgpt_app, []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    exmpp
    ]},
   {env,[]},
   {modules, []},

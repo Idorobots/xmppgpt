@@ -1,0 +1,4 @@
+[{<<"exmpp">>,
+  {git,"git@github.com:Teknogrebo/exmpp.git",
+       {ref,"3823c462d06f0d5234eac7ced409bd625c3dc115"}},
+  0}].

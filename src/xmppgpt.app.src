@@ -2,12 +2,13 @@
  [{description, "An OTP application"},
   {vsn, "0.1.0"},
   {registered, []},
-  {mod, {xmppgpt_app, []}},
   {applications,
    [kernel,
     stdlib,
+    ssl,
     exmpp
    ]},
+  {mod, {xmppgpt_app, []}},
   {env,[]},
   {modules, []},
 

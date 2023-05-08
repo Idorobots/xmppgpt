@@ -1,76 +1,65 @@
 -module(xmppgpt_session).
+-behaviour(gen_statem).
 
 -include_lib("exmpp/include/exmpp.hrl").
 -include_lib("exmpp/include/exmpp_client.hrl").
 
--export([start/5, stop/1]).
--export([init/5]).
+-export([start/5, stop/0]).
+-export([init/1, terminate/3, callback_mode/0]).
+-export([online/3]).
 
 -define(METHOD, "PLAIN").
 
 start(Server, Port, Username, Domain, Password) ->
-    Pid = spawn_link(?MODULE, init, [Server, Port, Username, Domain, Password]),
-    {ok, Pid}.
+    gen_statem:start_link({local, ?MODULE}, ?MODULE, [Server, Port, Username, Domain, Password], []).
 
-stop(EchoClientPid) ->
-    EchoClientPid ! stop.
+stop() ->
+    gen_statem:stop({local, ?MODULE}).
 
-init(Server, Port, Username, Domain, Password) ->
-    %% Start XMPP session: Needed to start service (Like
-    %% exmpp_stringprep):
+%% Callbacks
+callback_mode() ->
+    state_functions.
+
+init([Server, Port, Username, Domain, Password]) ->
     Session = exmpp_session:start({1,0}),
-    %% Create XMPP ID (Session Key):
     JID = exmpp_jid:make(Username, Domain, random),
-    %% Create a new session with basic (digest) authentication:
     exmpp_session:auth(Session, JID, Password, ?METHOD),
-    %% Connect in standard TCP:
     {ok, _StreamId, _Features} = exmpp_session:connect_SSL(Session, Server, Port),
-    session(Session, JID, Password).
 
-%% We are connected. We now log in (and try registering if authentication fails)
-session(Session, _MyJID, Password) ->
-    %% Login with defined JID / Authentication:
     try exmpp_session:login(Session, ?METHOD)
     catch
       throw:{auth_error, 'not-authorized'} ->
-        %% Try creating a new user:
-        io:format("Register~n",[]),
-        %% In a real life client, we should trap error case here
-        %% and print the correct message.
+        io:format("Registering user...~n",[]),
         exmpp_session:register_account(Session, Password),
-        %% After registration, retry to login:
-        exmpp_session:login(Session)
+        exmpp_session:login(Session, ?METHOD)
     end,
-    %% We explicitely send presence:
-    exmpp_session:send_packet(Session,
-                  exmpp_presence:set_status(
-                exmpp_presence:available(), "Echo Ready")),
-    loop(Session).
+    exmpp_session:send_packet(Session, exmpp_presence:set_status(exmpp_presence:available(), "ChatGPT Ready")),
+    {ok, online, Session}.
 
-%% Process exmpp packet:
-loop(Session) ->
-    receive
-        stop ->
-            exmpp_session:stop(Session);
-        %% If we receive a message, we reply with the same message
-        Record = #received_packet{packet_type=message,
-                  raw_packet=Packet,
-                  type_attr=Type} when Type =/= "error" ->
-            io:format("Received Message stanza:~n~p~n~n", [Record]),
-            echo_packet(Session, Packet),
-            loop(Session);
-    %% If we receive a presence stanza, handle it
-    Record when Record#received_packet.packet_type == 'presence' ->
-        io:format("Received Presence stanza:~n~p~n~n", [Record]),
-        handle_presence(Session, Record, Record#received_packet.raw_packet),
-        loop(Session);
-        Record ->
-            io:format("Received a stanza:~n~p~n~n", [Record]),
-            loop(Session)
-    end.
+terminate(_Reason, _State, Session) ->
+    exmpp_session:stop(Session),
+    ok.
 
-%% Send the same packet back for each message received
-echo_packet(Session, Packet) ->
+online(info, Record = #received_packet{packet_type=message, raw_packet=Packet, type_attr=Type}, Session) when Type =/= "error" ->
+    io:format("Received Message stanza:~n~p~n~n", [Record]),
+    handle_packet(Session, Packet),
+    {keep_state, Session};
+
+online(info, Record, Session) when Record#received_packet.packet_type == 'presence' ->
+    io:format("Received Presence stanza:~n~p~n~n", [Record]),
+    handle_presence(Session, Record, Record#received_packet.raw_packet),
+    {keep_state, Session};
+
+online(info, Record, Session) ->
+    io:format("Received a stanza:~n~p~n~n", [Record]),
+    {keep_state, Session};
+
+online(EventType, _EventContent, Session) ->
+    io:format("Got unknown event type: ~n~p~n~n", [EventType]),
+    {keep_state, Session}.
+
+%% Logic
+handle_packet(Session, Packet) ->
     From = exmpp_xml:get_attribute(Packet, <<"from">>, <<"unknown">>),
     To = exmpp_xml:get_attribute(Packet, <<"to">>, <<"unknown">>),
     TmpPacket = exmpp_xml:set_attribute(Packet, <<"from">>, To),
@@ -79,14 +68,11 @@ echo_packet(Session, Packet) ->
     exmpp_session:send_packet(Session, NewPacket).
 
 handle_presence(Session, Packet, _Presence) ->
-    case exmpp_jid:make(_From = Packet#received_packet.from) of
-    JID ->
-        case _Type = Packet#received_packet.type_attr of
+    JID = exmpp_jid:make(Packet#received_packet.from),
+    case Packet#received_packet.type_attr of
         "available" ->
-            %% handle presence availabl
             ok;
         "unavailable" ->
-            %% handle presence unavailable
             ok;
         "subscribe" ->
             presence_subscribed(Session, JID),
@@ -94,7 +80,6 @@ handle_presence(Session, Packet, _Presence) ->
         "subscribed" ->
             presence_subscribed(Session, JID),
             presence_subscribe(Session, JID)
-        end
     end.
 
 presence_subscribed(Session, Recipient) ->

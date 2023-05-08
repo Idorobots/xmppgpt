@@ -29,6 +29,14 @@ init([]) ->
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
+    %% FIXME Ensure this starts after the exmpp ETS table is populated.
+    %% ChildSpecs = [#{
+    %%   id => xmppgpt_session,
+    %%   start => {xmppgpt_session, start, []},
+    %%   shutdown => brutal_kill,
+    %%   type => worker,
+    %%   module => [xmppgpt_session]
+    %% }],
     ChildSpecs = [],
     {ok, {SupFlags, ChildSpecs}}.
 

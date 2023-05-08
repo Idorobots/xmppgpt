@@ -6,8 +6,10 @@
 -export([start/0, start/5, stop/1]).
 -export([init/5]).
 
+-define(METHOD, "PLAIN").
+
 start() ->
-    start("localhost", 5222, "chatgpt", "localhost", "password").
+    start("localhost", 5223, "chatgpt", "localhost", "password").
 
 start(Server, Port, Username, Domain, Password) ->
     spawn(?MODULE, init, [Server, Port, Username, Domain, Password]).
@@ -18,33 +20,33 @@ stop(EchoClientPid) ->
 init(Server, Port, Username, Domain, Password) ->
     %% Start XMPP session: Needed to start service (Like
     %% exmpp_stringprep):
-    Session = exmpp_session:start(),
+    Session = exmpp_session:start({1,0}),
     %% Create XMPP ID (Session Key):
     JID = exmpp_jid:make(Username, Domain, random),
     %% Create a new session with basic (digest) authentication:
-    exmpp_session:auth_basic_digest(Session, JID, Password),
+    exmpp_session:auth(Session, JID, Password, ?METHOD),
     %% Connect in standard TCP:
-    {ok, _StreamId} = exmpp_session:connect_TCP(Session, Server, Port),
+    {ok, _StreamId, _Features} = exmpp_session:connect_SSL(Session, Server, Port),
     session(Session, JID, Password).
 
 %% We are connected. We now log in (and try registering if authentication fails)
 session(Session, _MyJID, Password) ->
     %% Login with defined JID / Authentication:
-    try exmpp_session:login(Session)
+    try exmpp_session:login(Session, ?METHOD)
     catch
-	throw:{auth_error, 'not-authorized'} ->
-	    %% Try creating a new user:
-	    io:format("Register~n",[]),
-	    %% In a real life client, we should trap error case here
-	    %% and print the correct message.
-	    exmpp_session:register_account(Session, Password),
-	    %% After registration, retry to login:
-	    exmpp_session:login(Session)
+      throw:{auth_error, 'not-authorized'} ->
+        %% Try creating a new user:
+        io:format("Register~n",[]),
+        %% In a real life client, we should trap error case here
+        %% and print the correct message.
+        exmpp_session:register_account(Session, Password),
+        %% After registration, retry to login:
+        exmpp_session:login(Session)
     end,
     %% We explicitely send presence:
     exmpp_session:send_packet(Session,
-			      exmpp_presence:set_status(
-				exmpp_presence:available(), "Echo Ready")),
+                  exmpp_presence:set_status(
+                exmpp_presence:available(), "Echo Ready")),
     loop(Session).
 
 %% Process exmpp packet:
@@ -54,16 +56,16 @@ loop(Session) ->
             exmpp_session:stop(Session);
         %% If we receive a message, we reply with the same message
         Record = #received_packet{packet_type=message,
-				  raw_packet=Packet,
-				  type_attr=Type} when Type =/= "error" ->
+                  raw_packet=Packet,
+                  type_attr=Type} when Type =/= "error" ->
             io:format("Received Message stanza:~n~p~n~n", [Record]),
             echo_packet(Session, Packet),
             loop(Session);
-	%% If we receive a presence stanza, handle it
-	Record when Record#received_packet.packet_type == 'presence' ->
-	    io:format("Received Presence stanza:~n~p~n~n", [Record]),
-	    handle_presence(Session, Record, Record#received_packet.raw_packet),
-	    loop(Session);
+    %% If we receive a presence stanza, handle it
+    Record when Record#received_packet.packet_type == 'presence' ->
+        io:format("Received Presence stanza:~n~p~n~n", [Record]),
+        handle_presence(Session, Record, Record#received_packet.raw_packet),
+        loop(Session);
         Record ->
             io:format("Received a stanza:~n~p~n~n", [Record]),
             loop(Session)
@@ -80,21 +82,21 @@ echo_packet(Session, Packet) ->
 
 handle_presence(Session, Packet, _Presence) ->
     case exmpp_jid:make(_From = Packet#received_packet.from) of
-	JID ->
-	    case _Type = Packet#received_packet.type_attr of
-		"available" ->
-		    %% handle presence availabl
-		    ok;
-		"unavailable" ->
-		    %% handle presence unavailable
-		    ok;
-		"subscribe" ->
-		    presence_subscribed(Session, JID),
-		    presence_subscribe(Session, JID);
-		"subscribed" ->
-		    presence_subscribed(Session, JID),
-		    presence_subscribe(Session, JID)
-	    end
+    JID ->
+        case _Type = Packet#received_packet.type_attr of
+        "available" ->
+            %% handle presence availabl
+            ok;
+        "unavailable" ->
+            %% handle presence unavailable
+            ok;
+        "subscribe" ->
+            presence_subscribed(Session, JID),
+            presence_subscribe(Session, JID);
+        "subscribed" ->
+            presence_subscribed(Session, JID),
+            presence_subscribe(Session, JID)
+        end
     end.
 
 presence_subscribed(Session, Recipient) ->

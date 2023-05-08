@@ -12,7 +12,8 @@ start() ->
     start("localhost", 5223, "chatgpt", "localhost", "password").
 
 start(Server, Port, Username, Domain, Password) ->
-    spawn(?MODULE, init, [Server, Port, Username, Domain, Password]).
+    Pid = spawn(?MODULE, init, [Server, Port, Username, Domain, Password]),
+    {ok, Pid}.
 
 stop(EchoClientPid) ->
     EchoClientPid ! stop.

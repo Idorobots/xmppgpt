@@ -29,13 +29,21 @@ init(Args) ->
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
-    ChildSpecs = [#{
-      id => xmppgpt_session,
-      start => {xmppgpt_session, start, Args},
-      shutdown => brutal_kill,
-      type => worker,
-      module => [xmppgpt_session]
-    }],
+    ChildSpecs = [
+      #{
+        id => xmppgpt_session,
+        start => {xmppgpt_session, start, Args},
+        shutdown => brutal_kill,
+        type => worker,
+        module => [xmppgpt_session]
+      },
+      #{
+        id => xmppgpt_api,
+        start => {xmppgpt_api, start, [to, do]},
+        shutdown => brutal_kill,
+        type => worker,
+        module => [xmppgpt_api]
+      }],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions

@@ -1,7 +1,8 @@
 {application, xmppgpt,
  [{description, "An OTP application"},
   {vsn, "0.1.0"},
-  {registered, []},
+  {licenses, ["Apache-2.0"]},
+  {links, []},
   {applications,
    [kernel,
     stdlib,
@@ -10,8 +11,7 @@
    ]},
   {mod, {xmppgpt_app, []}},
   {env,[]},
-  {modules, []},
+  {modules, [xmppgpt_session, xmppgpt_sup, xmppgpt_app]},
+  {registered, [xmppgpt_sup]}
 
-  {licenses, ["Apache-2.0"]},
-  {links, []}
  ]}.

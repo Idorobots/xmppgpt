@@ -7,14 +7,14 @@
 
 -behaviour(supervisor).
 
--export([start_link/0]).
+-export([start_link/1]).
 
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
 
-start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+start_link(Args) ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, Args).
 
 %% sup_flags() = #{strategy => strategy(),         % optional
 %%                 intensity => non_neg_integer(), % optional
@@ -25,13 +25,13 @@ start_link() ->
 %%                  shutdown => shutdown(), % optional
 %%                  type => worker(),       % optional
 %%                  modules => modules()}   % optional
-init([]) ->
+init(Args) ->
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
     ChildSpecs = [#{
       id => xmppgpt_session,
-      start => {xmppgpt_session, start, []},
+      start => {xmppgpt_session, start, Args},
       shutdown => brutal_kill,
       type => worker,
       module => [xmppgpt_session]

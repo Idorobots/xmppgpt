@@ -3,17 +3,13 @@
 -include_lib("exmpp/include/exmpp.hrl").
 -include_lib("exmpp/include/exmpp_client.hrl").
 
--export([start/0, start/5, stop/1]).
+-export([start/5, stop/1]).
 -export([init/5]).
 
 -define(METHOD, "PLAIN").
 
-start() ->
-    start("localhost", 5223, "chatgpt", "localhost", "password").
-
 start(Server, Port, Username, Domain, Password) ->
-    Pid = spawn(?MODULE, init, [Server, Port, Username, Domain, Password]),
-    link(Pid),
+    Pid = spawn_link(?MODULE, init, [Server, Port, Username, Domain, Password]),
     {ok, Pid}.
 
 stop(EchoClientPid) ->

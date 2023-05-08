@@ -13,6 +13,7 @@ start() ->
 
 start(Server, Port, Username, Domain, Password) ->
     Pid = spawn(?MODULE, init, [Server, Port, Username, Domain, Password]),
+    link(Pid),
     {ok, Pid}.
 
 stop(EchoClientPid) ->

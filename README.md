@@ -14,4 +14,4 @@ Build
 Run
 ---
 
-    $ ./rebar3 shell
+    $ OPENAPI_KEY=<your OpenAI API KEY here> ./rebar3 shell

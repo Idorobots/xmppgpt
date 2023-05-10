@@ -27,7 +27,7 @@ init(Args = [Server, Port, Username, Domain, Password]) ->
     exmpp_session:auth(Session, JID, Password, ?METHOD),
     {ok, _StreamId, _Features} = exmpp_session:connect_SSL(Session, Server, Port),
 
-    try exmpp_session:login(Session, ?METHOD)
+    _ = try exmpp_session:login(Session, ?METHOD)
     catch
       throw:{auth_error, 'not-authorized'} ->
         io:format("Registering user...~n",[]),

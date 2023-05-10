@@ -25,8 +25,7 @@ init(Args) ->
     {ok, Args}.
 
 terminate(_Reason, _State) ->
-    hackney_pool:terminate(?MODULE),
-    ok.
+    hackney_pool:stop_pool(?MODULE).
 
 handle_call(Request, _From, State) ->
     io:format("Got unknown request: ~n~p~n~n", [Request]),
@@ -34,7 +33,7 @@ handle_call(Request, _From, State) ->
 
 handle_cast({prompt, Id, Prompt, From}, State) ->
     io:format("Got a prompt request: ~n~p~n~n", [Prompt]),
-    send_request(From, Id, Prompt, State),
+    _ = send_request(From, Id, Prompt, State),
     {noreply, State};
 
 handle_cast(Request, State) ->
@@ -57,7 +56,7 @@ send_request(From, Id, Prompt, [Url, ApiKey, _OrgId, Model, Temp]) ->
         {<<"Content-Type">>, <<"application/json">>}
     ],
     Options = [{connect_timeout, ?CONNECT_TIMEOUT}, {recv_timeout, ?REQUEST_TIMEOUT}, {pool, ?MODULE}],
-    case hackney:request(post, Url, Headers, Body, Options) of
+    _ = case hackney:request(post, Url, Headers, Body, Options) of
         {ok, _StatusCode, _RespHeaders, ClientRef} ->
             {ok, Response} = hackney:body(ClientRef),
             {ok, Parsed, _Rest} = jsone:try_decode(Response),

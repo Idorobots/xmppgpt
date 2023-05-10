@@ -11,7 +11,8 @@
 -define(METHOD, "PLAIN").
 
 start(Server, Port, Username, Domain, Password) ->
-    gen_statem:start_link({local, ?MODULE}, ?MODULE, [Server, Port, Username, Domain, Password], []).
+    gen_statem:start_link({local, ?MODULE}, ?MODULE,
+                          [Server, Port, Username, Domain, Password], []).
 
 stop() ->
     gen_statem:stop({local, ?MODULE}).
@@ -20,9 +21,9 @@ stop() ->
 callback_mode() ->
     state_functions.
 
-init(Args = [Server, Port, Username, Domain, Password]) ->
-    io:format("Started with: ~p~n", [Args]),
-    Session = exmpp_session:start_link({1,0}),
+init([Server, Port, Username, Domain, Password] = Args) ->
+    lager:info("Started with: ~p~n", [Args]),
+    Session = exmpp_session:start_link({1, 0}),
     JID = exmpp_jid:make(Username, Domain, random),
     exmpp_session:auth(Session, JID, Password, ?METHOD),
     {ok, _StreamId, _Features} = exmpp_session:connect_SSL(Session, Server, Port),
@@ -30,39 +31,48 @@ init(Args = [Server, Port, Username, Domain, Password]) ->
     _ = try exmpp_session:login(Session, ?METHOD)
     catch
       throw:{auth_error, 'not-authorized'} ->
-        io:format("Registering user...~n",[]),
+        lager:info("Registering user...~n", []),
         exmpp_session:register_account(Session, Password),
         exmpp_session:login(Session, ?METHOD)
     end,
-    exmpp_session:send_packet(Session, exmpp_presence:set_status(exmpp_presence:available(), "ChatGPT Ready")),
+    Packet = exmpp_presence:set_status(exmpp_presence:available(), "ChatGPT Ready"),
+    exmpp_session:send_packet(Session, Packet),
     {ok, listening, Session}.
 
 terminate(_Reason, _State, Session) ->
     exmpp_session:stop(Session),
     ok.
 
-listening(info, Record = #received_packet{packet_type=message, raw_packet=Packet, type_attr=Type}, Session) when Type =/= "error" ->
-    io:format("Received Message stanza:~n~p~n~n", [Record]),
+listening(info, #received_packet{
+    packet_type=message,
+    raw_packet=Packet,
+    type_attr=Type
+} = Record, Session) when Type =/= "error" ->
+    lager:debug("Received Message stanza:~n~p~n~n", [Record]),
     handle_packet(Session, Packet);
 
 listening(info, Record, Session) when Record#received_packet.packet_type == 'presence' ->
-    io:format("Received Presence stanza:~n~p~n~n", [Record]),
+    lager:debug("Received Presence stanza:~n~p~n~n", [Record]),
     handle_presence(Session, Record, Record#received_packet.raw_packet);
 
 listening(info, Record, Session) ->
-    io:format("Received a stanza:~n~p~n~n", [Record]),
+    lager:debug("Received a stanza:~n~p~n~n", [Record]),
     {keep_state, Session};
 
 listening(EventType, _EventContent, Session) ->
-    io:format("Got unknown event type: ~n~p~n~n", [EventType]),
+    lager:warning("Got unknown event type: ~n~p~n~n", [EventType]),
     {keep_state, Session}.
 
 awaiting_response(info, {prompt_response, {Id, To, From}, Response}, Session) ->
     respond(Session, Id, To, From, Response),
     {next_state, listening, Session};
 
-awaiting_response(info, Record = #received_packet{packet_type=message, raw_packet=Packet, type_attr=Type}, Session) when Type =/= "error" ->
-    io:format("Received Message stanza:~n~p~n~n", [Record]),
+awaiting_response(info, #received_packet{
+    packet_type=message,
+    raw_packet=Packet,
+    type_attr=Type
+} = Record, Session) when Type =/= "error" ->
+    lager:debug("Received Message stanza:~n~p~n~n", [Record]),
     From = exmpp_xml:get_attribute(Packet, <<"from">>, <<"unknown">>),
     To = exmpp_xml:get_attribute(Packet, <<"to">>, <<"unknown">>),
     Id = exmpp_xml:get_attribute(Packet, <<"id">>, <<"unknown">>),
@@ -70,11 +80,11 @@ awaiting_response(info, Record = #received_packet{packet_type=message, raw_packe
     {keep_state, Session};
 
 awaiting_response(info, Record, Session) when Record#received_packet.packet_type == 'presence' ->
-    io:format("Received Presence stanza:~n~p~n~n", [Record]),
+    lager:debug("Received Presence stanza:~n~p~n~n", [Record]),
     handle_presence(Session, Record, Record#received_packet.raw_packet);
 
 awaiting_response(EventType, _EventContent, Session) ->
-    io:format("Got unknown event type: ~n~p~n~n", [EventType]),
+    lager:warning("Got unknown event type: ~n~p~n~n", [EventType]),
     {keep_state, Session}.
 
 %% Logic
@@ -87,7 +97,7 @@ handle_packet(Session, Packet) ->
           %% Typing indication, etc.
           {keep_state, Session};
       Body ->
-          io:format("Processing ChatGPT prompt: ~n~p~n~n", [Body]),
+          lager:debug("Processing ChatGPT prompt: ~n~p~n~n", [Body]),
           xmppgpt_api:process_prompt({Id, To, From}, Body),
           {next_state, awaiting_response, Session}
     end.
@@ -115,15 +125,15 @@ handle_presence(Session, Packet, _Presence) ->
     {keep_state, Session}.
 
 presence_subscribed(Session, Recipient) ->
-    Presence_Subscribed = exmpp_presence:subscribed(),
-    Presence = exmpp_stanza:set_recipient(Presence_Subscribed, Recipient),
+    PresenceSubscribed = exmpp_presence:subscribed(),
+    Presence = exmpp_stanza:set_recipient(PresenceSubscribed, Recipient),
     send_packet(Session, Presence).
 
 presence_subscribe(Session, Recipient) ->
-    Presence_Subscribe = exmpp_presence:subscribe(),
-    Presence = exmpp_stanza:set_recipient(Presence_Subscribe, Recipient),
+    PresenceSubscribe = exmpp_presence:subscribe(),
+    Presence = exmpp_stanza:set_recipient(PresenceSubscribe, Recipient),
     send_packet(Session, Presence).
 
 send_packet(Session, Packet) ->
-    io:format("Sending stanza: ~n~p~n~n", [Packet]),
+    lager:debug("Sending stanza: ~n~p~n~n", [Packet]),
     exmpp_session:send_packet(Session, Packet).

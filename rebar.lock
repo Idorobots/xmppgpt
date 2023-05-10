@@ -4,6 +4,7 @@
   {git,"git@github.com:Teknogrebo/exmpp.git",
        {ref,"3823c462d06f0d5234eac7ced409bd625c3dc115"}},
   0},
+ {<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.9">>},1},
  {<<"hackney">>,
   {git,"git@github.com:benoitc/hackney.git",
        {ref,"3f6d481ffbf4ddacc1c7fe1614030a06f39e04cc"}},
@@ -13,6 +14,10 @@
   {git,"git@github.com:sile/jsone.git",
        {ref,"e25344b6c202dd7ffe520c0fb623c1ac53b637df"}},
   0},
+ {<<"lager">>,
+  {git,"https://github.com/erlang-lager/lager.git",
+       {ref,"459a3b2cdd9eadd29e5a7ce5c43932f5ccd6eb88"}},
+  0},
  {<<"metrics">>,{pkg,<<"metrics">>,<<"1.0.1">>},1},
  {<<"mimerl">>,{pkg,<<"mimerl">>,<<"1.2.0">>},1},
  {<<"parse_trans">>,{pkg,<<"parse_trans">>,<<"3.3.1">>},1},
@@ -21,6 +26,7 @@
 [
 {pkg_hash,[
  {<<"certifi">>, <<"6F2A475689DD47F19FB74334859D460A2DC4E3252A3324BD2111B8F0429E7E21">>},
+ {<<"goldrush">>, <<"F06E5D5F1277DA5C413E84D5A2924174182FB108DABB39D5EC548B27424CD106">>},
  {<<"idna">>, <<"8A63070E9F7D0C62EB9D9FCB360A7DE382448200FBBD1B106CC96D3D8099DF8D">>},
  {<<"metrics">>, <<"25F094DEA2CDA98213CECC3AEFF09E940299D950904393B2A29D191C346A8486">>},
  {<<"mimerl">>, <<"67E2D3F571088D5CFD3E550C383094B47159F3EEE8FFA08E64106CDF5E981BE3">>},
@@ -29,6 +35,7 @@
  {<<"unicode_util_compat">>, <<"BC84380C9AB48177092F43AC89E4DFA2C6D62B40B8BD132B1059ECC7232F9A78">>}]},
 {pkg_hash_ext,[
  {<<"certifi">>, <<"266DA46BDB06D6C6D35FDE799BCB28D36D985D424AD7C08B5BB48F5B5CDD4641">>},
+ {<<"goldrush">>, <<"99CB4128CFFCB3227581E5D4D803D5413FA643F4EB96523F77D9E6937D994CEB">>},
  {<<"idna">>, <<"92376EB7894412ED19AC475E4A86F7B413C1B9FBB5BD16DCCD57934157944CEA">>},
  {<<"metrics">>, <<"69B09ADDDC4F74A40716AE54D140F93BEB0FB8978D8636EADED0C31B6F099F16">>},
  {<<"mimerl">>, <<"F278585650AA581986264638EBF698F8BB19DF297F66AD91B18910DFC6E19323">>},

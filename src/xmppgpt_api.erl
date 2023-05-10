@@ -19,8 +19,8 @@ process_prompt(Id, Prompt) ->
     gen_server:cast(?MODULE, {prompt, Id, Prompt, self()}).
 
 %% Callbacks
-init(Args) ->
-    io:format("Started with: ~p~n", [Args]),
+init([_Url, _ApiKey, OrgId | _ ] = Args) ->
+    lager:info("Started with organization: ~p~n", [OrgId]),
     ok = hackney_pool:start_pool(?MODULE, [{timeout, ?POOL_TIMEOUT}]),
     {ok, Args}.
 
@@ -28,16 +28,16 @@ terminate(_Reason, _State) ->
     hackney_pool:stop_pool(?MODULE).
 
 handle_call(Request, _From, State) ->
-    io:format("Got unknown request: ~n~p~n~n", [Request]),
+    lager:warning("Got unknown request: ~n~p~n~n", [Request]),
     {noreply, State}.
 
 handle_cast({prompt, Id, Prompt, From}, State) ->
-    io:format("Got a prompt request: ~n~p~n~n", [Prompt]),
+    lager:debug("Got a prompt request: ~n~p~n~n", [Prompt]),
     _ = send_request(From, Id, Prompt, State),
     {noreply, State};
 
 handle_cast(Request, State) ->
-    io:format("Got unknown request: ~n~p~n~n", [Request]),
+    lager:warning("Got unknown request: ~n~p~n~n", [Request]),
     {noreply, State}.
 
 send_request(From, Id, Prompt, [Url, ApiKey, _OrgId, Model, Temp]) ->
@@ -55,7 +55,11 @@ send_request(From, Id, Prompt, [Url, ApiKey, _OrgId, Model, Temp]) ->
         {<<"Authorization">>, <<"Bearer ", ApiKeyBin/binary>>},
         {<<"Content-Type">>, <<"application/json">>}
     ],
-    Options = [{connect_timeout, ?CONNECT_TIMEOUT}, {recv_timeout, ?REQUEST_TIMEOUT}, {pool, ?MODULE}],
+    Options = [
+        {connect_timeout, ?CONNECT_TIMEOUT},
+        {recv_timeout, ?REQUEST_TIMEOUT},
+        {pool, ?MODULE}
+    ],
     _ = case hackney:request(post, Url, Headers, Body, Options) of
         {ok, _StatusCode, _RespHeaders, ClientRef} ->
             {ok, Response} = hackney:body(ClientRef),
@@ -74,7 +78,7 @@ handle_response(From, Id, #{<<"choices">> := Responses}) ->
     From ! {prompt_response, Id, Response};
 
 handle_response(From, Id, Response) ->
-    io:format("Got unknown resopnse: ~n~p~n~n", [Response]),
+    lager:warning("Got unknown resopnse: ~n~p~n~n", [Response]),
     From ! {prompt_response, Id, "Got an unknown response from ChatGPT."}.
 
 combine_responses(#{<<"message">> := #{<<"content">> := Response}}, Acc) ->

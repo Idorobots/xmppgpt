@@ -1,9 +1,17 @@
 xmppgpt
 =====
 
-An OTP application
+An XMPP bot using the ChatGPT API.
+
+![Pidgin Session](./pidginsession.png)
+
 
 Build
 -----
 
-    $ rebar3 compile
+    $ ./rebar3 compile
+
+Run
+---
+
+    $ ./rebar3 shell

@@ -57,7 +57,7 @@ send_request(From, Id, Prompt, [Url, ApiKey, _OrgId, Model, Temp]) ->
         {<<"Content-Type">>, <<"application/json">>}
     ],
     Options = [{connect_timeout, ?CONNECT_TIMEOUT}, {recv_timeout, ?REQUEST_TIMEOUT}, {pool, ?MODULE}],
-    case hackney:post(Url, Headers, Body, Options) of
+    case hackney:request(post, Url, Headers, Body, Options) of
         {ok, _StatusCode, _RespHeaders, ClientRef} ->
             {ok, Response} = hackney:body(ClientRef),
             {ok, Parsed, _Rest} = jsone:try_decode(Response),

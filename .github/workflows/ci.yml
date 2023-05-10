@@ -1,0 +1,10 @@
+on:
+  pull_request:
+  push:
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: erlef/setup-beam@v1
+      - run: sudo apt update && sudo apt install -y make gcc libssl-dev && rebar3 update && rebar3 ct && rebar3 dialyzer && rebar3 lint

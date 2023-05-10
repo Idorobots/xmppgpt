@@ -6,6 +6,7 @@
 -export([process_prompt/2]).
 
 -define(POOL_TIMEOUT, 120000).
+-define(CONNECT_TIMEOUT, 10000).
 -define(REQUEST_TIMEOUT, 30000).
 
 start(ApiUrl, ApiKey, OrgId, Model, Temp) ->
@@ -24,6 +25,7 @@ init(Args) ->
     {ok, Args}.
 
 terminate(_Reason, _State) ->
+    hackney_pool:terminate(?MODULE),
     ok.
 
 handle_call(Request, _From, State) ->
@@ -54,7 +56,7 @@ send_request(From, Id, Prompt, [Url, ApiKey, _OrgId, Model, Temp]) ->
         {<<"Authorization">>, <<"Bearer ", ApiKeyBin/binary>>},
         {<<"Content-Type">>, <<"application/json">>}
     ],
-    Options = [{timeout, ?REQUEST_TIMEOUT}, {pool, ?MODULE}],
+    Options = [{connect_timeout, ?CONNECT_TIMEOUT}, {recv_timeout, ?REQUEST_TIMEOUT}, {pool, ?MODULE}],
     case hackney:post(Url, Headers, Body, Options) of
         {ok, _StatusCode, _RespHeaders, ClientRef} ->
             {ok, Response} = hackney:body(ClientRef),

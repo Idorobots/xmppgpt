@@ -10,4 +10,4 @@ jobs:
         with:
           otp-version: '25'
           rebar3-version: '3.20.0'
-      - run: sudo apt update && sudo apt install -y make gcc libssl-dev && rebar3 update && rebar3 ct && rebar3 dialyzer && rebar3 lint
+      - run: sudo apt update && sudo apt install -y make gcc libssl-dev && rebar3 get-deps && rebar3 ct && rebar3 dialyzer && rebar3 lint

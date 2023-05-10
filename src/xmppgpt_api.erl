@@ -27,7 +27,7 @@ handle_call(Request, _From, State) ->
 
 handle_cast({prompt, Id, Prompt, From}, State) ->
     Response = Prompt, %% TODO Actually implement this.
-    From ! {prompt_response, Id, Response},
+    timer:send_after(5000, From, {prompt_response, Id, Response}),
     {noreply, State};
 
 handle_cast(Request, State) ->

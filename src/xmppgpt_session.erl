@@ -20,7 +20,8 @@ stop() ->
 callback_mode() ->
     state_functions.
 
-init([Server, Port, Username, Domain, Password]) ->
+init(Args = [Server, Port, Username, Domain, Password]) ->
+    io:format("Started with: ~p~n", [Args]),
     Session = exmpp_session:start_link({1,0}),
     JID = exmpp_jid:make(Username, Domain, random),
     exmpp_session:auth(Session, JID, Password, ?METHOD),

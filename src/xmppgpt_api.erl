@@ -68,7 +68,7 @@ send_request(From, Id, Prompt, [Url, ApiKey, _OrgId, Model, Temp]) ->
     end.
 
 handle_response(From, Id, #{<<"error">> := #{<<"message">> := Error}}) ->
-    From ! {propmt_response, Id, Error};
+    From ! {prompt_response, Id, Error};
 
 handle_response(From, Id, #{<<"choices">> := Responses}) ->
     Response = lists:foldl(fun combine_responses/2, <<"">>, Responses),

@@ -5,7 +5,7 @@
 -export([start/2, stop/1]).
 
 start(_StartType, StartArgs) ->
-    lager:info("Started with: ~p~n", [StartArgs]),
+    ok = lager:info("Started with: ~p~n", [StartArgs]),
     {ok, Server} = application:get_env(server),
     {ok, Port} = application:get_env(port),
     {ok, Username} = application:get_env(username),

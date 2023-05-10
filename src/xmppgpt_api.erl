@@ -20,7 +20,7 @@ process_prompt(Id, Prompt) ->
 
 %% Callbacks
 init([_Url, _ApiKey, OrgId | _ ] = Args) ->
-    lager:info("Started with organization: ~p~n", [OrgId]),
+    ok = lager:info("Started with organization: ~p~n", [OrgId]),
     ok = hackney_pool:start_pool(?MODULE, [{timeout, ?POOL_TIMEOUT}]),
     {ok, Args}.
 
@@ -28,16 +28,16 @@ terminate(_Reason, _State) ->
     hackney_pool:stop_pool(?MODULE).
 
 handle_call(Request, _From, State) ->
-    lager:warning("Got unknown request: ~n~p~n~n", [Request]),
+    ok = lager:warning("Got unknown request: ~n~p~n~n", [Request]),
     {noreply, State}.
 
 handle_cast({prompt, Id, Prompt, From}, State) ->
-    lager:debug("Got a prompt request: ~n~p~n~n", [Prompt]),
+    ok = lager:debug("Got a prompt request: ~n~p~n~n", [Prompt]),
     _ = send_request(From, Id, Prompt, State),
     {noreply, State};
 
 handle_cast(Request, State) ->
-    lager:warning("Got unknown request: ~n~p~n~n", [Request]),
+    ok = lager:warning("Got unknown request: ~n~p~n~n", [Request]),
     {noreply, State}.
 
 send_request(From, Id, Prompt, [Url, ApiKey, _OrgId, Model, Temp]) ->
@@ -78,7 +78,7 @@ handle_response(From, Id, #{<<"choices">> := Responses}) ->
     From ! {prompt_response, Id, Response};
 
 handle_response(From, Id, Response) ->
-    lager:warning("Got unknown resopnse: ~n~p~n~n", [Response]),
+    ok = lager:warning("Got unknown resopnse: ~n~p~n~n", [Response]),
     From ! {prompt_response, Id, "Got an unknown response from ChatGPT."}.
 
 combine_responses(#{<<"message">> := #{<<"content">> := Response}}, Acc) ->

@@ -22,7 +22,7 @@ callback_mode() ->
     state_functions.
 
 init([Server, Port, Username, Domain, Password] = Args) ->
-    lager:info("Started with: ~p~n", [Args]),
+    ok = lager:info("Started with: ~p~n", [Args]),
     Session = exmpp_session:start_link({1, 0}),
     JID = exmpp_jid:make(Username, Domain, random),
     exmpp_session:auth(Session, JID, Password, ?METHOD),
@@ -31,7 +31,7 @@ init([Server, Port, Username, Domain, Password] = Args) ->
     _ = try exmpp_session:login(Session, ?METHOD)
     catch
       throw:{auth_error, 'not-authorized'} ->
-        lager:info("Registering user...~n", []),
+        ok = lager:info("Registering user...~n", []),
         exmpp_session:register_account(Session, Password),
         exmpp_session:login(Session, ?METHOD)
     end,
@@ -48,19 +48,19 @@ listening(info, #received_packet{
     raw_packet=Packet,
     type_attr=Type
 } = Record, Session) when Type =/= "error" ->
-    lager:debug("Received Message stanza:~n~p~n~n", [Record]),
+    ok = lager:debug("Received Message stanza:~n~p~n~n", [Record]),
     handle_packet(Session, Packet);
 
 listening(info, Record, Session) when Record#received_packet.packet_type == 'presence' ->
-    lager:debug("Received Presence stanza:~n~p~n~n", [Record]),
+    ok = lager:debug("Received Presence stanza:~n~p~n~n", [Record]),
     handle_presence(Session, Record, Record#received_packet.raw_packet);
 
 listening(info, Record, Session) ->
-    lager:debug("Received a stanza:~n~p~n~n", [Record]),
+    ok = lager:debug("Received a stanza:~n~p~n~n", [Record]),
     {keep_state, Session};
 
 listening(EventType, _EventContent, Session) ->
-    lager:warning("Got unknown event type: ~n~p~n~n", [EventType]),
+    ok = lager:warning("Got unknown event type: ~n~p~n~n", [EventType]),
     {keep_state, Session}.
 
 awaiting_response(info, {prompt_response, {Id, To, From}, Response}, Session) ->
@@ -72,7 +72,7 @@ awaiting_response(info, #received_packet{
     raw_packet=Packet,
     type_attr=Type
 } = Record, Session) when Type =/= "error" ->
-    lager:debug("Received Message stanza:~n~p~n~n", [Record]),
+    ok = lager:debug("Received Message stanza:~n~p~n~n", [Record]),
     From = exmpp_xml:get_attribute(Packet, <<"from">>, <<"unknown">>),
     To = exmpp_xml:get_attribute(Packet, <<"to">>, <<"unknown">>),
     Id = exmpp_xml:get_attribute(Packet, <<"id">>, <<"unknown">>),
@@ -80,11 +80,11 @@ awaiting_response(info, #received_packet{
     {keep_state, Session};
 
 awaiting_response(info, Record, Session) when Record#received_packet.packet_type == 'presence' ->
-    lager:debug("Received Presence stanza:~n~p~n~n", [Record]),
+    ok = lager:debug("Received Presence stanza:~n~p~n~n", [Record]),
     handle_presence(Session, Record, Record#received_packet.raw_packet);
 
 awaiting_response(EventType, _EventContent, Session) ->
-    lager:warning("Got unknown event type: ~n~p~n~n", [EventType]),
+    ok = lager:warning("Got unknown event type: ~n~p~n~n", [EventType]),
     {keep_state, Session}.
 
 %% Logic
@@ -97,7 +97,7 @@ handle_packet(Session, Packet) ->
           %% Typing indication, etc.
           {keep_state, Session};
       Body ->
-          lager:debug("Processing ChatGPT prompt: ~n~p~n~n", [Body]),
+          ok = lager:debug("Processing ChatGPT prompt: ~n~p~n~n", [Body]),
           xmppgpt_api:process_prompt({Id, To, From}, Body),
           {next_state, awaiting_response, Session}
     end.
@@ -135,5 +135,5 @@ presence_subscribe(Session, Recipient) ->
     send_packet(Session, Presence).
 
 send_packet(Session, Packet) ->
-    lager:debug("Sending stanza: ~n~p~n~n", [Packet]),
+    ok = lager:debug("Sending stanza: ~n~p~n~n", [Packet]),
     exmpp_session:send_packet(Session, Packet).

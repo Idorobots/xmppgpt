@@ -86,15 +86,16 @@ handle_packet(Session, Packet) ->
           %% Typing indication, etc.
           {keep_state, Session};
       Body ->
-          xmppgpt_api:process_prompt({Id, From, To}, Body),
+          io:format("Processing ChatGPT prompt: ~n~p~n~n", [Body]),
+          xmppgpt_api:process_prompt({Id, To, From}, Body),
           {next_state, awaiting_response, Session}
     end.
 
-respond(Session, Id, To, From, Response) ->
+respond(Session, Id, From, To, Response) ->
     Message = exmpp_message:chat(Response),
     WithSender = exmpp_stanza:set_sender(Message, From),
     Packet = exmpp_stanza:set_recipient(WithSender, To),
-    exmpp_session:send_packet(Session, exmpp_stanza:set_id(Packet, Id)).
+    send_packet(Session, exmpp_stanza:set_id(Packet, Id)).
 
 handle_presence(Session, Packet, _Presence) ->
     JID = exmpp_jid:make(Packet#received_packet.from),
@@ -115,9 +116,13 @@ handle_presence(Session, Packet, _Presence) ->
 presence_subscribed(Session, Recipient) ->
     Presence_Subscribed = exmpp_presence:subscribed(),
     Presence = exmpp_stanza:set_recipient(Presence_Subscribed, Recipient),
-    exmpp_session:send_packet(Session, Presence).
+    send_packet(Session, Presence).
 
 presence_subscribe(Session, Recipient) ->
     Presence_Subscribe = exmpp_presence:subscribe(),
     Presence = exmpp_stanza:set_recipient(Presence_Subscribe, Recipient),
-    exmpp_session:send_packet(Session, Presence).
+    send_packet(Session, Presence).
+
+send_packet(Session, Packet) ->
+    io:format("Sending stanza: ~n~p~n~n", [Packet]),
+    exmpp_session:send_packet(Session, Packet).

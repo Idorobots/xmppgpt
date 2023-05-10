@@ -14,7 +14,7 @@ Build
 Run
 ---
 
-Assuming you have an ejabberd server running locally with the `localhost` domain and a user called `chatgtp@localhost` using the password `password` you can just execute it from rebar:
+Assuming you have an ejabberd server running locally with the `localhost` domain and a user called `chatgpt@localhost` using the password `password` you can just execute it from rebar:
 
     $ OPENAPI_KEY=<your OpenAI API KEY here> ./rebar3 shell
 
